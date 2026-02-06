@@ -15,15 +15,22 @@ return {
     "williamboman/mason-lspconfig.nvim",
     dependencies = { "williamboman/mason.nvim" },
     opts = {
-      ensure_installed = { "lua_ls", "rust_analyzer", },       -- preinstalled servers
+      ensure_installed = {
+        "lua_ls",
+        "rust_analyzer",
+        -- NOTE: pug is NOT included here on purpose
+      },
     },
   },
 
-  -- LSP config
+  -- LSP configuration
   {
     "neovim/nvim-lspconfig",
     config = function()
-      local on_attach = function(_, bufnr)
+      ------------------------------------------------------------------
+      -- ON ATTACH
+      ------------------------------------------------------------------
+      local on_attach = function(client, bufnr)
         local opts = { noremap = true, silent = true, buffer = bufnr }
 
         vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
@@ -32,36 +39,72 @@ return {
         vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, opts)
         vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
         vim.keymap.set("n", "<leader>f", vim.lsp.buf.format, opts)
+
+        -- Format on save
+        if client.supports_method("textDocument/formatting") then
+          local group = vim.api.nvim_create_augroup(
+            "LspFormatOnSave_" .. bufnr,
+            { clear = true }
+          )
+
+          vim.api.nvim_create_autocmd("BufWritePre", {
+            group = group,
+            buffer = bufnr,
+            callback = function()
+              vim.lsp.buf.format({ bufnr = bufnr })
+            end,
+          })
+        end
       end
 
-      -- Optionally add nvim-cmp capabilities
+      ------------------------------------------------------------------
+      -- CAPABILITIES (nvim-cmp)
+      ------------------------------------------------------------------
       local capabilities = vim.lsp.protocol.make_client_capabilities()
       local ok, cmp_nvim_lsp = pcall(require, "cmp_nvim_lsp")
       if ok then
         capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
       end
 
+      ------------------------------------------------------------------
+      -- CUSTOM SERVER: PUG
+      ------------------------------------------------------------------
+      vim.lsp.config("pug", {
+        cmd = { "pug-lsp" }, -- or "pug-language-server"
+        filetypes = { "pug" },
+        root_markers = { "package.json", ".git" },
+        on_attach = on_attach,
+        capabilities = capabilities,
+      })
+
+      vim.lsp.enable("pug")
+
+      ------------------------------------------------------------------
+      -- AUTO-SETUP MASON SERVERS
+      ------------------------------------------------------------------
       local mason_lspconfig = require("mason-lspconfig")
-      local servers = mason_lspconfig.get_installed_servers()       -- get all installed servers
+      local servers = mason_lspconfig.get_installed_servers()
 
       for _, server in ipairs(servers) do
-        local server_opts = {
+        local opts = {
           on_attach = on_attach,
           capabilities = capabilities,
         }
 
-        -- Special config for lua_ls
+        -- lua_ls specific config
         if server == "lua_ls" then
-          server_opts.settings = {
+          opts.settings = {
             Lua = {
               diagnostics = { globals = { "vim" } },
-              workspace = { library = vim.api.nvim_get_runtime_file("", true) },
+              workspace = {
+                library = vim.api.nvim_get_runtime_file("", true),
+              },
               telemetry = { enable = false },
             },
           }
         end
 
-        vim.lsp.config(server, server_opts)
+        vim.lsp.config(server, opts)
         vim.lsp.enable(server)
       end
     end,
