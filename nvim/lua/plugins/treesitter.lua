@@ -7,6 +7,8 @@ return {
       ensure_installed = {
         "lua",
         "javascript",
+        "typescript",
+        "tsx",
         "prisma",
         "json",
         "html",
@@ -14,7 +16,7 @@ return {
       },
       highlight = {
         enable = true,
-        additional_vim_regex_highlighting = true,
+        additional_vim_regex_highlighting = false,
       },
       indent = { enable = true },
     },
