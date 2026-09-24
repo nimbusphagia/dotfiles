@@ -77,6 +77,9 @@ return {
 				root_markers = { ".git" },
 				capabilities = capabilities,
 				on_attach = function(client, bufnr)
+					client.server_capabilities.documentFormattingProvider = false
+					client.server_capabilities.documentRangeFormattingProvider = false
+
 					on_attach(client, bufnr)
 
 					local has_sqls, sqls_helper = pcall(require, "sqls")

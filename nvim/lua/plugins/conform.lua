@@ -11,10 +11,11 @@ return {
 					typescript = { "prettier" },
 					javascript = { "prettier" },
 					json = { "prettier" },
+					sql = { "sql_formatter" },
 				},
 				format_on_save = {
-					timeout_ms = 500,
-					lsp_fallback = true,
+					timeout_ms = 2000,
+					lsp_format = "fallback",
 				},
 			})
 		end,
